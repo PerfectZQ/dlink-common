@@ -1,0 +1,13 @@
+# Project exclude paths
+/target/
+**/target/**
+.idea
+*.iml
+data/*
+testData
+logs
+dependency-reduced-pom.xml
+hdfs-download-client/dist/lib
+hdfs-download-client/dist/jdk
+dist-*
+hdfs-download-client/dist.zip

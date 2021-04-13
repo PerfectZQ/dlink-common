@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>dlink-common</artifactId>
+        <groupId>com.sensetime.bigdata</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dlink-common-tool</artifactId>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+
+        <!-- Log4j2 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-1.2-api</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+
+    </dependencies>
+    <build>
+
+        <plugins>
+            <!-- Scala Compiler -->
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+                <version>2.15.2</version>
+                <!-- Indicate the order of compile java and scala, you can configure this at "Settings -> Compiler ->
+                Scala Compiler -> Compile order" when use IntelliJ IDEA, default mixed -->
+                <executions>
+                    <!-- Compile java first, default -->
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                    <!-- Compile scala first to avoid the error can't find package when java invoke scala class -->
+                    <!--
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                    -->
+                </executions>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-target:jvm-1.8</arg>
+                    </args>
+                    <excludes>
+                        <!-- Avoid recompile java files which has been modified by maven-compiler when APT program
+                         changes AST of java program, otherwise it will be overwritten by maven-scala-plugin -->
+                        <exclude>**/*.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Shade Package -->
+            <!-- Reference: http://maven.apache.org/plugins/maven-shade-plugin/shade-mojo.html -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <!-- 用来标识是否为当前 artifacts 创建缩减的 pom，为true时，它会把你的 pom 中的 dependency 干掉，并且
+                    将它们放在一个名为 dependency-reduced-pom.xml 的临时文件中。默认为 true -->
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <!-- 创建 source jar -->
+                    <createSourcesJar>false</createSourcesJar>
+                    <!-- 通过 <include> <exclude> 添加或者剔除指定内容到 jar 到 -->
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                    <!-- When true, dependencies will be stripped down on the class level to only the transitive
+                    hull required for the artifact. Note: Usage of this feature requires Java 1.5 or higher. -->
+                    <minimizeJar>false</minimizeJar>
+                </configuration>
+                <executions>
+                    <!-- Run shade goal on package phase -->
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <!--
+                                    JAR files providing implementations of some interfaces often ship with a META-INF/services/ directory that maps
+                                    interfaces to their implementation classes for lookup by the service locator. To relocate the class names of these
+                                    implementation classes, and to merge multiple implementations of the same interface into one service entry
+                                 -->
+                                <!-- https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer -->
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!--在 META-INF/MANIFEST.MF 文件中添加 key: value 可以设置 Main 方法-->
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <main-Class></main-Class>
+                                        <Build-Number>1</Build-Number>
+                                        <Built-By>ZhangQiang</Built-By>
+                                        <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Specific extra source directories -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 可以在这里添加任意多个 source 文件夹 -->
+                            <sources>
+                                <source>${basedir}/src/main/scala</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Compiler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- 一般情况下，source 与 target 是保持一致的。但是，有时候为了让程序能在其他版本的jdk中运行(对于低版本目标jdk，源代码中需要没有使用低版本jdk中不支持的语法)，会存在target不同于source的情况 。-->
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <!-- Optional -->
+                    <meminitial>128m</meminitial>
+                    <maxmem>512m</maxmem>
+                    <!-- Enable fork，用于明确表示开启编译版本配置 -->
+                    <fork>true</fork>
+                    <!-- 配置 JDK 的版本，方便代码在不同版本间迁移-->
+                    <compilerVersion>${java.version}</compilerVersion>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
