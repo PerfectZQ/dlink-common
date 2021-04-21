@@ -92,7 +92,7 @@ object Avro {
     try {
       fileReader = new DataFileReader(file, reader)
       schema = fileReader.getSchema
-      logger.info(schema.toString(true))
+      logger.debug(schema.toString(true))
     } catch {
       case e: Exception => e.printStackTrace()
         logger.error("", e)

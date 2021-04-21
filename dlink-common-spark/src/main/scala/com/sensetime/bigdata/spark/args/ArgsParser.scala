@@ -5,17 +5,19 @@ import org.apache.commons.cli.{HelpFormatter, Options}
 
 /**
  * The abstraction of args parser
+ * <p>
+ * Note: abstract class can have parameterised constructor, but trait do not.
  *
  * @author zhangqiang
  * @since 2021/1/26 17:14
  */
-trait ArgsParser {
+abstract class ArgsParser(val args: Array[String]) {
 
-  protected var args: Array[String]
+  @transient protected var options: Options = _
 
+  // abstract class constructor, will execute when implemented class constructed. trait will return null directly.
+  options = defineOptions
   parse(args)
-
-  @transient protected val options: Options = defineOptions
 
   /**
    * Define the options

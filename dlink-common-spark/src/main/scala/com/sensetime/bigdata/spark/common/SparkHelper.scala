@@ -5,6 +5,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import org.slf4j.LoggerFactory
 
+import java.nio.file.{Path, Paths}
+
 /**
  * @author zhangqiang
  * @since 2020/5/28 12:27
@@ -57,6 +59,10 @@ object SparkHelper {
     if (sparkMaster == null) {
       builder.master("local[*]")
       logger.warn("Using local[*] as spark master since `spark.master` is not set.")
+      // Just for winutils.exe
+      val localHadoopPath = Paths.get(System.getProperty("user.dir"), "hadoop").toString
+      System.setProperty("hadoop.home.dir", localHadoopPath)
+      logger.warn(s"Set hadoop.home.dir = $localHadoopPath")
     }
     if (enableHive) {
       // yarn client 模式下需要指定，否则会莫名其妙的读file:/etc/spark2/2.6.4.0-91/0/hive-site.xml

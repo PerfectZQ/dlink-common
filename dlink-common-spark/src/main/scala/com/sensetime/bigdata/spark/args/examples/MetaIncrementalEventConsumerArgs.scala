@@ -7,7 +7,7 @@ import org.apache.commons.cli.{BasicParser, CommandLine, Options}
  * @author zhangqiang
  * @since 2021/4/12 14:59
  */
-case class MetaIncrementalEventConsumerArgs(override var args: Array[String]) extends ArgsParser {
+case class MetaIncrementalEventConsumerArgs(override val args: Array[String]) extends ArgsParser(args) {
 
   var indexPrefix: String = _
   var indexSuffix: String = _
