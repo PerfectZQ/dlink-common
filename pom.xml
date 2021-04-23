@@ -7,7 +7,7 @@
     <groupId>com.sensetime.bigdata</groupId>
     <artifactId>dlink-common</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <description>
         Common components
         - Avro Parser
@@ -169,7 +169,7 @@
         </repository>
         <snapshotRepository>
             <id>opencloud-bigdata</id>
-            <url>http://maven.opencloud.sensetime.com/repository/hadoop-snapshot/</url>
+            <url>http://maven.opencloud.sensetime.com/repository/hadoop/</url>
         </snapshotRepository>
     </distributionManagement>
 

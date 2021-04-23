@@ -294,4 +294,32 @@ object Avro {
     resultSet.toList
   }
 
+  /**
+   * TODO 解析 avro 文件包含多少条数据
+   *
+   * @param fileStatus
+   * @param targetPath
+   * @param top
+   * @param fs
+   */
+  def getAvroMetadata(fileStatus: FileStatus, targetPath: String = null, top: Int = Integer.MAX_VALUE)(implicit fs: FileSystem): (Schema, Int) = {
+    val len = fileStatus.getLen
+    val reader: DatumReader[GenericRecord] = new GenericDatumReader[GenericRecord]()
+    var seekableInput: AvroFSInput = null
+    var fileReader: DataFileReader[GenericRecord] = null
+    try {
+      val fsDataInputStream = fs.open(fileStatus.getPath)
+      seekableInput = new AvroFSInput(fsDataInputStream, len)
+      fileReader = new DataFileReader[GenericRecord](seekableInput, reader)
+      val schema: Schema = fileReader.getSchema
+      val recordNums = fileReader.iterator().asScala.size
+      (schema, recordNums)
+    } finally {
+      if (fileReader != null)
+        fileReader.close()
+      if (seekableInput != null)
+        seekableInput.close()
+    }
+  }
+
 }

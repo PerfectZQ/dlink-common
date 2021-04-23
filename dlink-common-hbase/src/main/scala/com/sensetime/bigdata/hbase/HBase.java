@@ -94,8 +94,13 @@ public class HBase {
      * @throws Exception
      */
     public static long asyncPut(String hTable, List<Put> puts) throws Exception {
+        try (Connection conn = getHBaseConnection()) {
+            return asyncPut(conn, hTable, puts);
+        }
+    }
+
+    public static long asyncPut(Connection connection, String hTable, List<Put> puts) throws Exception {
         long currentTime = System.currentTimeMillis();
-        Connection conn = getHBaseConnection();
         final BufferedMutator.ExceptionListener listener = (e, mutator) -> {
             for (int i = 0; i < e.getNumExceptions(); i++) {
                 System.out.println("Failed to sent put " + e.getRow(i) + ".");
@@ -104,13 +109,12 @@ public class HBase {
         BufferedMutatorParams params = new BufferedMutatorParams(TableName.valueOf(hTable))
                 .listener(listener);
         params.writeBufferSize(5 * 1024 * 1024);
-        final BufferedMutator mutator = conn.getBufferedMutator(params);
+        final BufferedMutator mutator = connection.getBufferedMutator(params);
         try {
             mutator.mutate(puts);
             mutator.flush();
         } finally {
             mutator.close();
-            conn.close();
         }
         return System.currentTimeMillis() - currentTime;
     }
