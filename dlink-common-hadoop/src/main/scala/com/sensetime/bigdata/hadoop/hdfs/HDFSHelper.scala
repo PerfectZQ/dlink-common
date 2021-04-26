@@ -24,17 +24,18 @@ object HDFSHelper {
 }
 
 /**
+ * 支持创建跨集群 Kerberos 认证的 FileSystem
  *
- * @param clusterNameToConnect
- * @param hadoopConfPathToConnect
- * @param username
- * @param keytabPath
- * @param clusterNameOfKerberos
- * @param hadoopConfPathOfKerberos
- * @param krb5confPath
- * @param trustStorePath
- * @param kerberosEnable
- * @param debug
+ * @param clusterNameToConnect     要连接的 Hadoop 集群名称
+ * @param hadoopConfPathToConnect  要连接 Hadoop 集群的配置文件加载路径
+ * @param username                 Kerberos 认证的 principal
+ * @param keytabPath               Kerberos 认证的 keytab 路径
+ * @param clusterNameOfKerberos    要认证的 KDC 集群名称
+ * @param hadoopConfPathOfKerberos 要认证的 KDC 集群的配置文件路径
+ * @param krb5confPath             Kerberos 认证的 krb5.conf 路径，主要用于拼接 Realm 和查找 KDC Server 地址
+ * @param trustStorePath           Hadoop trustStore 文件路径
+ * @param kerberosEnable           是否开启 Kerberos 认证
+ * @param debug                    是否开启 Kerberos 认证的 debug 模式
  * @param useSubjectCredsOnly
  */
 class HDFSHelper(private var clusterNameToConnect: String,
@@ -120,14 +121,13 @@ class HDFSHelper(private var clusterNameToConnect: String,
    */
   def this(clusterName: String, applicationHome: String) = {
     this(clusterName, HDFSHelper.internalUsername, Array(applicationHome, "hadoop-clusters", clusterName, "kerberos", s"${HDFSHelper.internalUsername}.$clusterName.keytab").mkString(HDFSHelper.systemSep), applicationHome)
-    println(s"HDFSHelper.internalUsername = ${HDFSHelper.internalUsername}")
+    println(s"====> HDFSHelper.internalUsername = ${HDFSHelper.internalUsername}")
   }
 
   def this(clusterName: String) = {
     this(clusterName, HDFSHelper.classPath)
-    println(s"HDFSHelper.classPath = ${HDFSHelper.classPath}")
+    println(s"====> HDFSHelper.classPath = ${HDFSHelper.classPath}")
   }
-
 
   def loadDefaultConfigurations: Configuration = {
     val hadoopConfFiles = if (hadoopConfPathToConnect != null) {
@@ -137,7 +137,6 @@ class HDFSHelper(private var clusterNameToConnect: String,
     }
     loadConfigurations(hadoopConfFiles)
   }
-
 
   def loadConfigurations(hadoopConfFiles: Array[String]): Configuration = {
     val conf: Configuration = HDFSUtils.initConfiguration(hadoopConfFiles: _*)
@@ -190,7 +189,7 @@ class HDFSHelper(private var clusterNameToConnect: String,
       }
     }
     // SSL config，instead property `ssl.client.truststore.location` in "ssl-client.xml"
-    println(s"javax.net.ssl.trustStore: $trustStorePath")
+    println(s"====> javax.net.ssl.trustStore: $trustStorePath")
     System.setProperty("javax.net.ssl.trustStore", trustStorePath)
     ugi.doAs(new PrivilegedAction[FileSystem] {
       override def run(): FileSystem = FileSystem.get(conf)
