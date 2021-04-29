@@ -47,9 +47,12 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
     val fileSystem: FileSystem = pooledObject.getObject
     try {
       fileSystem.exists(new Path("/"))
+      println(s"====> validateObject true")
       true
     } catch {
-      case _: IOException => false
+      case _: IOException =>
+        println(s"====> validateObject false")
+        false
     }
   }
 

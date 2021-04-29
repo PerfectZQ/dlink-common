@@ -152,15 +152,23 @@ under the License.
    | server for that repository.
    |-->
   <mirrors>
-  
 
-   <mirror>
-      <id>aliyun-maven</id>
-      <mirrorOf>*</mirrorOf>
+
+    <mirror>
+      <id>opencloud-bigdata</id>
+      <mirrorOf>opencloud-bigdata</mirrorOf>
+      <name>opencloud-bigdata</name>
+      <url>http://maven.opencloud.sensetime.com/repository/hadoop/</url>
+    </mirror>
+
+
+    <mirror>
+      <id>aliyun</id>
+      <!-- 只配置 * 会导致私服不可用，* 的意思就是（根据 mirrorOf 和 repository 的 id ）匹配所有的库（repository） -->
+      <mirrorOf>*,!opencloud-bigdata</mirrorOf>
       <name>aliyun maven</name>
       <url>http://maven.aliyun.com/nexus/content/groups/public</url>
     </mirror>
-
 
 
 
