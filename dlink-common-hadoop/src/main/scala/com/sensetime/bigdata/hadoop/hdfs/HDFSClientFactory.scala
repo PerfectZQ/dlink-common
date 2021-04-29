@@ -24,6 +24,7 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    */
   override def makeObject(): PooledObject[FileSystem] = {
     val fileSystem = FileSystem.newInstance(configuration)
+    println(s"====> HDFSClientFactory makeObject: $fileSystem")
     new DefaultPooledObject[FileSystem](fileSystem)
   }
 
@@ -34,6 +35,7 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    */
   override def destroyObject(pooledObject: PooledObject[FileSystem]): Unit = {
     val fileSystem: FileSystem = pooledObject.getObject
+    println(s"====> HDFSClientFactory destroyObject: $fileSystem")
     fileSystem.close()
   }
 
@@ -47,11 +49,11 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
     val fileSystem: FileSystem = pooledObject.getObject
     try {
       fileSystem.exists(new Path("/"))
-      println(s"====> validateObject true")
+      println(s"====> HDFSClientFactory validateObject: $fileSystem true.")
       true
     } catch {
       case _: IOException =>
-        println(s"====> validateObject false")
+        println(s"====> HDFSClientFactory validateObject: $fileSystem false.")
         false
     }
   }
