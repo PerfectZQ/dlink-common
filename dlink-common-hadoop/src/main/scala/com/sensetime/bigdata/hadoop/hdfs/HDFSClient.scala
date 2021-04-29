@@ -56,16 +56,28 @@ object HDFSClient {
  */
 class HDFSClient extends Closeable {
 
-  private var fileSystem: FileSystem = _
+  @volatile private var fileSystem: FileSystem = _
 
   def open(): FileSystem = {
-    fileSystem = HDFSClient.pool.borrowObject()
+    if (fileSystem == null) {
+      this.synchronized {
+        if (fileSystem == null) {
+          fileSystem = HDFSClient.pool.borrowObject()
+        }
+      }
+    }
     fileSystem
   }
 
   override def close(): Unit = {
-    if (fileSystem != null)
-      HDFSClient.pool.returnObject(fileSystem)
+    if (fileSystem != null) {
+      this.synchronized {
+        if (fileSystem != null) {
+          HDFSClient.pool.returnObject(fileSystem)
+          fileSystem = null
+        }
+      }
+    }
   }
 
 }
