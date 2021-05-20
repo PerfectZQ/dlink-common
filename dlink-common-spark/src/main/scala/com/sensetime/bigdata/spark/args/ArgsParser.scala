@@ -11,7 +11,7 @@ import org.apache.commons.cli.{HelpFormatter, Options}
  * @author zhangqiang
  * @since 2021/1/26 17:14
  */
-abstract class ArgsParser(val args: Array[String]) {
+abstract class ArgsParser(val args: Array[String]) extends Serializable {
 
   @transient protected var options: Options = _
 
