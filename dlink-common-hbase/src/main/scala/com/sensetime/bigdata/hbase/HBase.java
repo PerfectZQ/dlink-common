@@ -30,16 +30,10 @@ public class HBase {
         // 解决 java.io.IOException: No FileSystem for scheme: hdfs
         configuration.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         // configuration.set("zookeeper.znode.parent", "/hbase-unsecure");
-        try {
-            conn = ConnectionFactory.createConnection(configuration);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return conn;
+        return getHBaseConnection(configuration);
     }
 
     public static Connection getHBaseConnection() {
-        Connection conn = null;
         Configuration configuration = HBaseConfiguration.create();
         /*
          * 在进行插入操作的时候，HBase会挨个检查要插入的列，检查每个列的大小
@@ -52,6 +46,17 @@ public class HBase {
         // 解决 java.io.IOException: No FileSystem for scheme: hdfs
         configuration.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         //configuration.set("zookeeper.znode.parent", "/hbase-unsecure");
+        return getHBaseConnection(configuration);
+    }
+
+    /**
+     * 根据自定义的 configuration 构造 Connection
+     *
+     * @param configuration
+     * @return
+     */
+    public static Connection getHBaseConnection(Configuration configuration) {
+        Connection conn = null;
         try {
             conn = ConnectionFactory.createConnection(configuration);
         } catch (IOException e) {
