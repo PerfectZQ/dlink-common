@@ -23,7 +23,8 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    * @return
    */
   override def makeObject(): PooledObject[FileSystem] = {
-    val fileSystem = FileSystem.get(ConfigurationUtil.disableCache(configuration))
+    val fileSystem = FileSystem.newInstance(configuration)
+    // val fileSystem = FileSystem.get(ConfigurationUtil.disableCache(configuration))
     println(s"====> HDFSClientFactory makeObject: $fileSystem")
     new DefaultPooledObject[FileSystem](fileSystem)
   }
