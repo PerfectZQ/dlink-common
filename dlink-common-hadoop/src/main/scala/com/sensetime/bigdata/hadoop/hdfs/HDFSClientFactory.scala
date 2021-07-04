@@ -36,12 +36,12 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    */
   override def destroyObject(pooledObject: PooledObject[FileSystem]): Unit = {
     val fileSystem: FileSystem = pooledObject.getObject
-    println(s"====> HDFSClientFactory destroyObject: $fileSystem")
     fileSystem.close()
+    println(s"====> HDFSClientFactory destroyObject: $fileSystem")
   }
 
   /**
-   * 校验池化对象是否可用
+   * 校验池化的对象是否可用
    *
    * @param pooledObject
    * @return
@@ -53,14 +53,28 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
       println(s"====> HDFSClientFactory validateObject: $fileSystem true.")
       true
     } catch {
-      case _: IOException =>
-        println(s"====> HDFSClientFactory validateObject: $fileSystem false.")
+      case e: Exception =>
+        println(s"====> HDFSClientFactory validateObject: $fileSystem false, caused by $e")
         false
     }
   }
 
+  /**
+   * 重新初始化从对象池返回的对象
+   * <p>
+   * 重新刷新 Kerberos 认证
+   *
+   * @param pooledObject
+   */
   override def activateObject(pooledObject: PooledObject[FileSystem]): Unit = {
-
+    val renewer = "sre.bigdata"
+    val fileSystem: FileSystem = pooledObject.getObject
+    val token = fileSystem.getDelegationToken(renewer)
+    var expire = 0L
+    if (token != null) {
+      expire = token.renew(configuration)
+    }
+    println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $renewer, token=$token, expire=$expire")
   }
 
   override def passivateObject(pooledObject: PooledObject[FileSystem]): Unit = {
