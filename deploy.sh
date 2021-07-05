@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 module="$1"
 
 if [[ "$module" != "" ]]; then
