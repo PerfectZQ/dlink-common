@@ -5,6 +5,7 @@ import org.apache.commons.pool2.impl.DefaultPooledObject
 import org.apache.commons.pool2.{PooledObject, PooledObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.security.SaslRpcServer.AuthMethod
 import org.apache.hadoop.security.UserGroupInformation
 
 import java.security.PrivilegedAction
@@ -75,6 +76,7 @@ class HDFSClientFactory(configuration: Configuration = new Configuration(), kerb
       UserGroupInformation.reset()
       UserGroupInformation.setConfiguration(configuration)
       val ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(kerberosConfig.principal, kerberosConfig.keytabFilePath)
+      ugi.setAuthenticationMethod(AuthMethod.KERBEROS)
       ugi.doAs(new PrivilegedAction[Unit] {
         override def run(): Unit = {
           val token = fileSystem.getDelegationToken(principal)
