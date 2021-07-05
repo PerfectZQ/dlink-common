@@ -1,11 +1,13 @@
 package com.sensetime.bigdata.hadoop.hdfs
 
+import com.sensetime.bigdata.hadoop.bean.KerberosConfig
 import org.apache.commons.pool2.impl.DefaultPooledObject
 import org.apache.commons.pool2.{PooledObject, PooledObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.security.UserGroupInformation
 
-import java.io.IOException
+import java.security.PrivilegedAction
 
 
 /**
@@ -14,7 +16,7 @@ import java.io.IOException
  * @author zhangqiang
  * @since 2021/4/26 15:47
  */
-class HDFSClientFactory(configuration: Configuration = new Configuration())
+class HDFSClientFactory(configuration: Configuration = new Configuration(), kerberosConfig: KerberosConfig = null)
   extends PooledObjectFactory[FileSystem] {
 
   /**
@@ -67,14 +69,23 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    * @param pooledObject
    */
   override def activateObject(pooledObject: PooledObject[FileSystem]): Unit = {
-    val renewer = "sre.bigdata"
-    val fileSystem: FileSystem = pooledObject.getObject
-    val token = fileSystem.getDelegationToken(renewer)
-    var expire = 0L
-    if (token != null) {
-      expire = token.renew(configuration)
+    if (kerberosConfig != null) {
+      val fileSystem: FileSystem = pooledObject.getObject
+      val principal = "sre.bigdata"
+      UserGroupInformation.reset()
+      UserGroupInformation.setConfiguration(configuration)
+      val ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(kerberosConfig.principal, kerberosConfig.keytabFilePath)
+      ugi.doAs(new PrivilegedAction[Unit] {
+        override def run(): Unit = {
+          val token = fileSystem.getDelegationToken(principal)
+          var expire = 0L
+          if (token != null) {
+            expire = token.renew(configuration)
+          }
+          println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $principal, token=$token, expire=$expire")
+        }
+      })
     }
-    println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $renewer, token=$token, expire=$expire")
   }
 
   override def passivateObject(pooledObject: PooledObject[FileSystem]): Unit = {
