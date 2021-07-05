@@ -72,10 +72,11 @@ class HDFSClientFactory(configuration: Configuration = new Configuration())
    */
   override def activateObject(pooledObject: PooledObject[FileSystem]): Unit = {
     val fileSystem: FileSystem = pooledObject.getObject
-    if (fileSystem.isInstanceOf[Renewable]) {
-      DelegationTokenRenewer.getInstance().addRenewAction(fileSystem)
-    } else {
-      println(s"====> HDFSClientFactory activateObject: FileSystem $fileSystem is not Renewable.")
+    fileSystem match {
+      case renewable: Renewable =>
+        DelegationTokenRenewer.getInstance().addRenewAction(renewable)
+      case _ =>
+        println(s"====> HDFSClientFactory activateObject: FileSystem $fileSystem is not Renewable.")
     }
     /*
     val renewer = "sre.bigdata@HADOOP.DATA.SENSETIME.COM"
