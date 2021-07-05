@@ -36,21 +36,11 @@ object HDFSClientPool {
    *
    * @return
    */
-  def getDefaultPool(): HDFSClientPool = {
+  def getDefaultPool: HDFSClientPool = {
     if (defaultPool == null) {
       HDFSClientPool.synchronized {
         if (defaultPool == null) {
-          val config = new HDFSConfig()
-          val urls: java.util.Enumeration[URL] = this.getClass.getClassLoader.getResources("hdfs.properties")
-          val properties: Properties = new Properties()
-          while (urls.hasMoreElements) {
-            val url: URL = urls.nextElement()
-            properties.load(url.openStream())
-          }
-          config.setMaxIdle(properties.getProperty("hdfs.pool.maxIdle", "8").toInt)
-          config.setMaxTotal(properties.getProperty("hdfs.pool.maxTotal", "8").toInt)
-          config.setMinIdle(properties.getProperty("hdfs.pool.minIdle", "0").toInt)
-          config.setMaxWaitMillis(properties.getProperty("hdfs.pool.maxWaitMillis", "-1").toLong)
+          val config = getDefaultHDFSConfig
           val factory = new HDFSClientFactory()
           defaultPool = new HDFSClientPool(factory, config)
           println(s"====> Default HDFSClientPool Created.")
@@ -61,18 +51,58 @@ object HDFSClientPool {
   }
 
   /**
-   * 程序运行终止时，关闭连接池
+   * 初始化连接池
+   *
+   * @return
    */
-  def shutdownDefaultPool(): Unit = {
-    if (defaultPool != null) {
+  def getDefaultPool(factory: HDFSClientFactory, config: HDFSConfig): HDFSClientPool = {
+    if (defaultPool == null) {
       HDFSClientPool.synchronized {
-        if (defaultPool != null) {
-          defaultPool.close()
-          defaultPool = null
-          println(s"====> Default HDFSClientPool Closed.")
+        if (defaultPool == null) {
+          defaultPool = new HDFSClientPool(factory, config)
+          println(s"====> Default HDFSClientPool Created.")
         }
       }
     }
+    defaultPool
+  }
+
+  def getDefaultHDFSConfig: HDFSConfig = {
+    val config = new HDFSConfig()
+    val urls: java.util.Enumeration[URL] = this.getClass.getClassLoader.getResources("hdfs.properties")
+    val properties: Properties = new Properties()
+    while (urls.hasMoreElements) {
+      val url: URL = urls.nextElement()
+      properties.load(url.openStream())
+    }
+    config.setMaxIdle(properties.getProperty("hdfs.pool.maxIdle", "8").toInt)
+    config.setMaxTotal(properties.getProperty("hdfs.pool.maxTotal", "8").toInt)
+    config.setMinIdle(properties.getProperty("hdfs.pool.minIdle", "0").toInt)
+    config.setMaxWaitMillis(properties.getProperty("hdfs.pool.maxWaitMillis", "-1").toLong)
+    config
+  }
+
+  /**
+   *
+   * @param pool
+   */
+  def shutdownPool(pool: HDFSClientPool): Unit = {
+    if (pool != null) {
+      pool.synchronized {
+        if (pool != null) {
+          pool.close()
+          println(s"====> HDFSClientPool $pool Closed.")
+        }
+      }
+    }
+  }
+
+  /**
+   * 程序运行终止时，关闭连接池
+   */
+  def shutdownDefaultPool(): Unit = {
+    shutdownPool(defaultPool)
+    defaultPool = null
   }
 
 }
