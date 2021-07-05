@@ -70,24 +70,14 @@ class HDFSClientFactory(configuration: Configuration = new Configuration(), kerb
    * @param pooledObject
    */
   override def activateObject(pooledObject: PooledObject[FileSystem]): Unit = {
-    if (kerberosConfig != null) {
-      val fileSystem: FileSystem = pooledObject.getObject
-      val principal = "sre.bigdata"
-      UserGroupInformation.reset()
-      UserGroupInformation.setConfiguration(configuration)
-      val ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(kerberosConfig.principal, kerberosConfig.keytabFilePath)
-      ugi.setAuthenticationMethod(AuthMethod.KERBEROS)
-      ugi.doAs(new PrivilegedAction[Unit] {
-        override def run(): Unit = {
-          val token = fileSystem.getDelegationToken(principal)
-          var expire = 0L
-          if (token != null) {
-            expire = token.renew(configuration)
-          }
-          println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $principal, token=$token, expire=$expire")
-        }
-      })
+    val fileSystem: FileSystem = pooledObject.getObject
+    val renewer = "sre.bigdata@HADOOP.DATA.SENSETIME.COM"
+    val token = fileSystem.getDelegationToken(renewer)
+    var expire = 0L
+    if (token != null) {
+      expire = token.renew(configuration)
     }
+    println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $renewer, token=$token, expire=$expire")
   }
 
   override def passivateObject(pooledObject: PooledObject[FileSystem]): Unit = {
