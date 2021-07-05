@@ -15,11 +15,11 @@ import java.io.Closeable
  * @author zhangqiang
  * @since 2021/4/26 16:37
  */
-class HDFSClient(configuration: Configuration = new Configuration(), kerberosConfig: KerberosConfig = null) extends Closeable {
+class HDFSClient(configuration: Configuration = new Configuration()) extends Closeable {
 
   @volatile private var fileSystem: FileSystem = _
 
-  private val factory = new HDFSClientFactory(configuration, kerberosConfig)
+  private val factory = new HDFSClientFactory(configuration)
 
   def open(): FileSystem = {
     if (fileSystem == null) {

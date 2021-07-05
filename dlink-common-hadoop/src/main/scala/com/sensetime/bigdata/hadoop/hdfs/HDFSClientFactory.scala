@@ -4,7 +4,8 @@ import com.sensetime.bigdata.hadoop.bean.KerberosConfig
 import org.apache.commons.pool2.impl.DefaultPooledObject
 import org.apache.commons.pool2.{PooledObject, PooledObjectFactory}
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.DelegationTokenRenewer.Renewable
+import org.apache.hadoop.fs.{DelegationTokenRenewer, FileSystem, Path}
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod
 import org.apache.hadoop.security.UserGroupInformation
 
@@ -17,7 +18,7 @@ import java.security.PrivilegedAction
  * @author zhangqiang
  * @since 2021/4/26 15:47
  */
-class HDFSClientFactory(configuration: Configuration = new Configuration(), kerberosConfig: KerberosConfig = null)
+class HDFSClientFactory(configuration: Configuration = new Configuration())
   extends PooledObjectFactory[FileSystem] {
 
   /**
@@ -71,6 +72,12 @@ class HDFSClientFactory(configuration: Configuration = new Configuration(), kerb
    */
   override def activateObject(pooledObject: PooledObject[FileSystem]): Unit = {
     val fileSystem: FileSystem = pooledObject.getObject
+    if (fileSystem.isInstanceOf[Renewable]) {
+      DelegationTokenRenewer.getInstance().addRenewAction(fileSystem)
+    } else {
+      println(s"====> HDFSClientFactory activateObject: FileSystem $fileSystem is not Renewable.")
+    }
+    /*
     val renewer = "sre.bigdata@HADOOP.DATA.SENSETIME.COM"
     val token = fileSystem.getDelegationToken(renewer)
     var expire = 0L
@@ -78,6 +85,7 @@ class HDFSClientFactory(configuration: Configuration = new Configuration(), kerb
       expire = token.renew(configuration)
     }
     println(s"====> HDFSClientFactory activateObject: Renew DelegationToken of $renewer, token=$token, expire=$expire")
+    */
   }
 
   override def passivateObject(pooledObject: PooledObject[FileSystem]): Unit = {
