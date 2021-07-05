@@ -36,25 +36,6 @@ object HDFSClientPool {
    *
    * @return
    */
-  def getDefaultPool: HDFSClientPool = {
-    if (defaultPool == null) {
-      HDFSClientPool.synchronized {
-        if (defaultPool == null) {
-          val config = getDefaultHDFSConfig
-          val factory = new HDFSClientFactory()
-          defaultPool = new HDFSClientPool(factory, config)
-          println(s"====> Default HDFSClientPool Created.")
-        }
-      }
-    }
-    defaultPool
-  }
-
-  /**
-   * 初始化连接池
-   *
-   * @return
-   */
   def getDefaultPool(factory: HDFSClientFactory, config: HDFSConfig): HDFSClientPool = {
     if (defaultPool == null) {
       HDFSClientPool.synchronized {

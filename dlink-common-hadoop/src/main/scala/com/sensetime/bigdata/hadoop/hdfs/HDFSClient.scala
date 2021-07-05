@@ -15,20 +15,17 @@ import java.io.Closeable
  * @author zhangqiang
  * @since 2021/4/26 16:37
  */
-class HDFSClient(kerberosConfig: KerberosConfig = null) extends Closeable {
+class HDFSClient(configuration: Configuration = new Configuration(), kerberosConfig: KerberosConfig = null) extends Closeable {
 
   @volatile private var fileSystem: FileSystem = _
+
+  private val factory = new HDFSClientFactory(configuration, kerberosConfig)
 
   def open(): FileSystem = {
     if (fileSystem == null) {
       this.synchronized {
         if (fileSystem == null) {
-          if (kerberosConfig == null) {
-            fileSystem = HDFSClientPool.getDefaultPool.borrowObject()
-          } else {
-            val factory = new HDFSClientFactory(new Configuration(), kerberosConfig)
-            fileSystem = HDFSClientPool.getDefaultPool(factory, HDFSClientPool.getDefaultHDFSConfig).borrowObject()
-          }
+          fileSystem = HDFSClientPool.getDefaultPool(factory, HDFSClientPool.getDefaultHDFSConfig).borrowObject()
         }
       }
     }
@@ -39,7 +36,7 @@ class HDFSClient(kerberosConfig: KerberosConfig = null) extends Closeable {
     if (fileSystem != null) {
       this.synchronized {
         if (fileSystem != null) {
-          HDFSClientPool.getDefaultPool.returnObject(fileSystem)
+          HDFSClientPool.getDefaultPool(factory, HDFSClientPool.getDefaultHDFSConfig).returnObject(fileSystem)
           fileSystem = null
         }
       }
