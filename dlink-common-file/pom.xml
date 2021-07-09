@@ -45,7 +45,7 @@
         <!-- Cglib -->
         <dependency>
             <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
+            <artifactId>cglib-nodep</artifactId>
             <version>${cglib.version}</version>
         </dependency>
 
