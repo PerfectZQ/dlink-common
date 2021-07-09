@@ -1,16 +1,10 @@
 package com.sensetime.bigdata.hadoop.hdfs
 
-import com.sensetime.bigdata.hadoop.bean.KerberosConfig
 import org.apache.commons.pool2.impl.DefaultPooledObject
 import org.apache.commons.pool2.{PooledObject, PooledObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.DelegationTokenRenewer.Renewable
 import org.apache.hadoop.fs.{DelegationTokenRenewer, FileSystem, Path}
-import org.apache.hadoop.security.SaslRpcServer.AuthMethod
-import org.apache.hadoop.security.UserGroupInformation
-
-import java.security.PrivilegedAction
-
 
 /**
  * HDFS Client Factory: 管理连接对象的创建，销毁，验证等动作
@@ -18,7 +12,7 @@ import java.security.PrivilegedAction
  * @author zhangqiang
  * @since 2021/4/26 15:47
  */
-class HDFSClientFactory(configuration: Configuration = new Configuration())
+class FileSystemPooledObjectFactory(configuration: Configuration = new Configuration())
   extends PooledObjectFactory[FileSystem] {
 
   /**

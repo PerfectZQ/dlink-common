@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.FileSystem
  * @author zhangqiang
  * @since 2021/4/26 14:33
  */
-class HDFSConfig extends GenericObjectPoolConfig[FileSystem] {
+class FileSystemObjectPoolConfig extends GenericObjectPoolConfig[FileSystem] {
 
   this.setTestOnBorrow(true)
   // 在空闲时检查有效性, 默认 false

@@ -12,11 +12,11 @@ import java.util.Properties
  * @author zhangqiang
  * @since 2021/4/26 14:30
  */
-class HDFSClientPool(val factory: HDFSClientFactory,
-                     val config: HDFSConfig) extends GenericObjectPool[FileSystem](factory, config) {
+class FileSystemObjectPool(val factory: FileSystemPooledObjectFactory,
+                           val config: FileSystemObjectPoolConfig) extends GenericObjectPool[FileSystem](factory, config) {
 
-  def this(factory: HDFSClientFactory) = {
-    this(factory, new HDFSConfig())
+  def this(factory: FileSystemPooledObjectFactory) = {
+    this(factory, new FileSystemObjectPoolConfig())
   }
 }
 
@@ -27,20 +27,20 @@ class HDFSClientPool(val factory: HDFSClientFactory,
  * @author zhangqiang
  * @since 2021/4/26 16:37
  */
-object HDFSClientPool {
+object FileSystemObjectPool {
 
-  @volatile private var defaultPool: HDFSClientPool = _
+  @volatile private var defaultPool: FileSystemObjectPool = _
 
   /**
    * 初始化连接池
    *
    * @return
    */
-  def getDefaultPool(factory: HDFSClientFactory, config: HDFSConfig): HDFSClientPool = {
+  def getDefaultPool(factory: FileSystemPooledObjectFactory, config: FileSystemObjectPoolConfig): FileSystemObjectPool = {
     if (defaultPool == null) {
-      HDFSClientPool.synchronized {
+      FileSystemObjectPool.synchronized {
         if (defaultPool == null) {
-          defaultPool = new HDFSClientPool(factory, config)
+          defaultPool = new FileSystemObjectPool(factory, config)
           println(s"====> Default HDFSClientPool Created.")
         }
       }
@@ -48,8 +48,8 @@ object HDFSClientPool {
     defaultPool
   }
 
-  def getDefaultHDFSConfig: HDFSConfig = {
-    val config = new HDFSConfig()
+  def getDefaultHDFSConfig: FileSystemObjectPoolConfig = {
+    val config = new FileSystemObjectPoolConfig()
     val urls: java.util.Enumeration[URL] = this.getClass.getClassLoader.getResources("hdfs.properties")
     val properties: Properties = new Properties()
     while (urls.hasMoreElements) {
@@ -67,7 +67,7 @@ object HDFSClientPool {
    *
    * @param pool
    */
-  def shutdownPool(pool: HDFSClientPool): Unit = {
+  def shutdownPool(pool: FileSystemObjectPool): Unit = {
     if (pool != null) {
       pool.synchronized {
         if (pool != null) {
