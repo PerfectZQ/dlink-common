@@ -11,6 +11,9 @@
 
     <artifactId>dlink-common-hadoop</artifactId>
 
+    <properties>
+        <cglib.version>3.3.0</cglib.version>
+    </properties>
 
     <dependencies>
 
@@ -18,6 +21,13 @@
             <groupId>com.sensetime.bigdata</groupId>
             <artifactId>dlink-common-file</artifactId>
             <version>1.0</version>
+        </dependency>
+
+        <!-- Cglib -->
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib-nodep</artifactId>
+            <version>${cglib.version}</version>
         </dependency>
 
         <!-- Scala -->
