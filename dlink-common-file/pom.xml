@@ -47,6 +47,7 @@
             <groupId>cglib</groupId>
             <artifactId>cglib-nodep</artifactId>
             <version>${cglib.version}</version>
+            <optional>false</optional>
         </dependency>
 
         <!-- MIME Type Detect -->
