@@ -47,8 +47,6 @@
             <groupId>cglib</groupId>
             <artifactId>cglib-nodep</artifactId>
             <version>${cglib.version}</version>
-            <!-- 传递依赖到子项目 -->
-            <optional>false</optional>
         </dependency>
 
         <!-- MIME Type Detect -->
