@@ -36,8 +36,7 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
           proxy = en.create().asInstanceOf[FileSystem]
-          // 不知道为什么 target 从对象池中拿出来后 getConf 返回 null，导致调用 FileSystem.open(Path) 出现 NPE
-          target.setConf(FileSystemProxyFactory.configuration)
+          // 不知道为什么 proxy 创建的时候会调用 setConf(null)，导致调用 FileSystem.open(Path) 出现 NPE
           proxy.setConf(FileSystemProxyFactory.configuration)
           println(s"====> Create proxy instance $proxy of target $target, conf=${target.getConf}")
         }
