@@ -43,6 +43,7 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 
   @throws(classOf[Throwable])
   override def intercept(obj: Object, method: Method, args: Array[Object], proxy: MethodProxy): Object = {
+    println(s"====> Proxy intercept: method=${method.getName}, args=${args.mkString(",")}")
     val returnValue = method.getName match {
       case "close" =>
         FileSystemProxyFactory.pool.returnObject(target)
