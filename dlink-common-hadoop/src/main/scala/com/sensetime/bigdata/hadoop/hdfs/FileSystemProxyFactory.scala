@@ -22,6 +22,9 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 
   /**
    * Get a proxy object for target object
+   * <p>
+   * Note: The none arg constructor of FileSystem's super class [[org.apache.hadoop.conf.Configured]]
+   * will set conf null default. It'll cause NPE when invoke [[FileSystem.open(Path)]]
    *
    * @return
    */
@@ -34,12 +37,9 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setSuperclass(target.getClass)
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
-          if (target.isInstanceOf[DistributedFileSystem]) {
-            proxy = en.create(Array(classOf[Configuration]), Array(target.getConf)).asInstanceOf[FileSystem]
-          } else {
-            proxy = en.create().asInstanceOf[FileSystem]
-          }
-          println(s"====> Create proxy instance $proxy of target $target")
+          proxy = en.create().asInstanceOf[FileSystem]
+          proxy.setConf(target.getConf)
+          println(s"====> Create proxy instance $proxy of target $target, conf=${target.getConf}")
         }
       }
     }
