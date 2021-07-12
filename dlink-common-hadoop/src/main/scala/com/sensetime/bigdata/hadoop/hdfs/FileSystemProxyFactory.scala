@@ -23,8 +23,6 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
   /**
    * Get a proxy object for target object
    * <p>
-   * Note: The none arg constructor of FileSystem's super class [[org.apache.hadoop.conf.Configured]]
-   * will set conf null default. It'll cause NPE when invoke [[FileSystem.open(Path)]]
    *
    * @return
    */
@@ -38,7 +36,9 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
           proxy = en.create().asInstanceOf[FileSystem]
-          proxy.setConf(target.getConf)
+          // 不知道为什么 target 从对象池中拿出来后 getConf 返回 null，导致调用 FileSystem.open(Path) 出现 NPE
+          target.setConf(FileSystemProxyFactory.configuration)
+          proxy.setConf(FileSystemProxyFactory.configuration)
           println(s"====> Create proxy instance $proxy of target $target, conf=${target.getConf}")
         }
       }
@@ -61,8 +61,8 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 }
 
 object FileSystemProxyFactory {
-
-  private val factory = new FileSystemPooledObjectFactory(new Configuration())
+  val configuration = new Configuration()
+  private val factory = new FileSystemPooledObjectFactory(configuration)
   private val config: FileSystemObjectPoolConfig = FileSystemObjectPool.getDefaultHDFSConfig
   private lazy val pool: FileSystemObjectPool = FileSystemObjectPool.getDefaultPool(factory, config)
 
