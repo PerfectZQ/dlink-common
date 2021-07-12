@@ -38,8 +38,9 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
           proxy = en.create().asInstanceOf[FileSystem]
-          // 调用 en.create() 的时候，会调用 FileSystem 的父类 Configured 的无参构造函数，从而执行 setConf(null)，导致 target 中的
-          // conf 被覆盖为 null，当执行 FileSystem.open(Path) 会调用 getConf().get.. 从而出现 NPE，这里重新设置回去
+          // 调用 en.create() 的时候，由于使用的是无参构造方法，会执行 FileSystem 的父类 Configured 的无参构造函数，
+          // 从而执行 setConf(null)，导致 target 中的 conf 被覆盖为 null，当执行 FileSystem.open(Path) 会调用
+          // getConf().getInt("io.file.buffer.size", 4096) 从而出现 NPE，这里重新设置回去
           proxy.setConf(configuration)
           println(s"====> Create proxy instance $proxy of target $target, conf=${target.getConf}")
         }
