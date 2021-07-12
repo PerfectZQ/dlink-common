@@ -34,6 +34,7 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
           proxy = en.create().asInstanceOf[FileSystem]
+          println(s"====> Create proxy instance $proxy of target $target")
         }
       }
     }
