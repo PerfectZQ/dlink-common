@@ -3,6 +3,7 @@ package com.sensetime.bigdata.hadoop.hdfs
 import net.sf.cglib.proxy.{Enhancer, MethodInterceptor, MethodProxy}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.hdfs.DistributedFileSystem
 
 import java.lang.reflect.Method
 
@@ -33,7 +34,11 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setSuperclass(target.getClass)
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
-          proxy = en.create().asInstanceOf[FileSystem]
+          if (target.isInstanceOf[DistributedFileSystem]) {
+            proxy = en.create(Array(classOf[Configuration]), Array(target.getConf)).asInstanceOf[FileSystem]
+          } else {
+            proxy = en.create().asInstanceOf[FileSystem]
+          }
           println(s"====> Create proxy instance $proxy of target $target")
         }
       }
