@@ -18,6 +18,8 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 
   private val target: FileSystem = FileSystemProxyFactory.pool.borrowObject(maxWaitMillis)
 
+  private val configuration: Configuration = target.getConf
+
   @volatile private var proxy: FileSystem = _
 
   /**
@@ -36,8 +38,9 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
           en.setCallback(this)
           // Create proxy object: ...$$EnhancerByCGLIB$$5b0d50e0
           proxy = en.create().asInstanceOf[FileSystem]
-          // 不知道为什么 proxy 创建的时候会调用 setConf(null)，导致调用 FileSystem.open(Path) 出现 NPE
-          proxy.setConf(FileSystemProxyFactory.configuration)
+          // 调用 en.create() 的时候，会调用 FileSystem 的父类 Configured 的无参构造函数，从而执行 setConf(null)
+          // 导致调用 FileSystem.open(Path) 出现 NPE，这里重新设置回去
+          proxy.setConf(configuration)
           println(s"====> Create proxy instance $proxy of target $target, conf=${target.getConf}")
         }
       }
@@ -47,7 +50,6 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 
   @throws(classOf[Throwable])
   override def intercept(obj: Object, method: Method, args: Array[Object], proxy: MethodProxy): Object = {
-    println(s"====> Proxy intercept: method=${method.getName}, args=${args.mkString(",")}")
     val returnValue = method.getName match {
       case "close" =>
         FileSystemProxyFactory.pool.returnObject(target)
@@ -60,8 +62,8 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 }
 
 object FileSystemProxyFactory {
-  val configuration = new Configuration()
-  private val factory = new FileSystemPooledObjectFactory(configuration)
+
+  private val factory = new FileSystemPooledObjectFactory(new Configuration())
   private val config: FileSystemObjectPoolConfig = FileSystemObjectPool.getDefaultHDFSConfig
   private lazy val pool: FileSystemObjectPool = FileSystemObjectPool.getDefaultPool(factory, config)
 
