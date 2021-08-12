@@ -3,8 +3,10 @@ package com.sensetime.bigdata.hadoop.hdfs
 import net.sf.cglib.proxy.{Enhancer, MethodInterceptor, MethodProxy}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.security.UserGroupInformation
 
 import java.lang.reflect.Method
+import java.security.PrivilegedAction
 
 /**
  * Proxy class of [[FileSystem]].
@@ -26,6 +28,8 @@ class FileSystemProxyFactory(factory: FileSystemPooledObjectFactory,
   private val configuration: Configuration = target.getConf
 
   @volatile private var proxy: FileSystem = _
+
+  val ugi: UserGroupInformation = objectPool.factory.ugi
 
   def this(factory: FileSystemPooledObjectFactory) {
     this(factory, FileSystemObjectPoolConfig.getDefaultHDFSConfig, -1)
@@ -65,13 +69,17 @@ class FileSystemProxyFactory(factory: FileSystemPooledObjectFactory,
 
   @throws(classOf[Throwable])
   override def intercept(obj: Object, method: Method, args: Array[Object], proxy: MethodProxy): Object = {
-    val returnValue = method.getName match {
-      case "close" =>
-        objectPool.returnObject(target)
-        Unit
-      case _ => method.invoke(target, args: _*)
-    }
-    returnValue
+    ugi.doAs(new PrivilegedAction[Object] {
+      override def run(): Object = {
+        val returnValue = method.getName match {
+          case "close" =>
+            objectPool.returnObject(target)
+            Unit
+          case _ => method.invoke(target, args: _*)
+        }
+        returnValue
+      }
+    })
   }
 
 }
