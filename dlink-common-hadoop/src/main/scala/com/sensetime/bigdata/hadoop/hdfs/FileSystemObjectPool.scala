@@ -1,10 +1,13 @@
 package com.sensetime.bigdata.hadoop.hdfs
 
 import org.apache.commons.pool2.impl.GenericObjectPool
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.FileSystem.getDefaultUri
+import org.apache.hadoop.util.StringUtils
 
-import java.net.URL
-import java.util.Properties
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 
 /**
  * FileSystem Connection Pool based on Apache common-pool2
@@ -18,6 +21,7 @@ class FileSystemObjectPool(val factory: FileSystemPooledObjectFactory,
   def this(factory: FileSystemPooledObjectFactory) = {
     this(factory, new FileSystemObjectPoolConfig())
   }
+
 }
 
 
@@ -29,7 +33,29 @@ class FileSystemObjectPool(val factory: FileSystemPooledObjectFactory,
  */
 object FileSystemObjectPool {
 
-  @volatile private var defaultPool: FileSystemObjectPool = _
+  class Key(conf: Configuration) {
+
+    private val uri = getDefaultUri(conf)
+    private val scheme: String = if (uri.getScheme == null) "" else StringUtils.toLowerCase(uri.getScheme)
+    private val authority: String = if (uri.getAuthority == null) "" else StringUtils.toLowerCase(uri.getAuthority)
+
+    override def hashCode: Int = (scheme + authority).hashCode
+
+    private def isEqual(a: Any, b: Any) = (a == b) || (a != null && a.equals(b))
+
+    override def equals(obj: Any): Boolean = {
+      if (this == obj) return true
+      if (obj != null && obj.isInstanceOf[Key]) {
+        val that = obj.asInstanceOf[Key]
+        return isEqual(this.scheme, that.scheme) && isEqual(this.authority, that.authority)
+      }
+      false
+    }
+
+    override def toString: String = scheme + "://" + authority
+  }
+
+  @volatile private val poolCache: ConcurrentHashMap[Key, FileSystemObjectPool] = new ConcurrentHashMap[Key, FileSystemObjectPool]()
 
   /**
    * 初始化连接池
@@ -37,30 +63,8 @@ object FileSystemObjectPool {
    * @return
    */
   def getDefaultPool(factory: FileSystemPooledObjectFactory, config: FileSystemObjectPoolConfig): FileSystemObjectPool = {
-    if (defaultPool == null) {
-      FileSystemObjectPool.synchronized {
-        if (defaultPool == null) {
-          defaultPool = new FileSystemObjectPool(factory, config)
-          println(s"====> Default HDFSClientPool Created.")
-        }
-      }
-    }
-    defaultPool
-  }
-
-  def getDefaultHDFSConfig: FileSystemObjectPoolConfig = {
-    val config = new FileSystemObjectPoolConfig()
-    val urls: java.util.Enumeration[URL] = this.getClass.getClassLoader.getResources("hdfs.properties")
-    val properties: Properties = new Properties()
-    while (urls.hasMoreElements) {
-      val url: URL = urls.nextElement()
-      properties.load(url.openStream())
-    }
-    config.setMaxIdle(properties.getProperty("hdfs.pool.maxIdle", "8").toInt)
-    config.setMaxTotal(properties.getProperty("hdfs.pool.maxTotal", "8").toInt)
-    config.setMinIdle(properties.getProperty("hdfs.pool.minIdle", "0").toInt)
-    config.setMaxWaitMillis(properties.getProperty("hdfs.pool.maxWaitMillis", "-1").toLong)
-    config
+    val key = new Key(factory.configuration)
+    poolCache.computeIfAbsent(key, (_: Key) => new FileSystemObjectPool(factory, config))
   }
 
   /**
@@ -72,6 +76,7 @@ object FileSystemObjectPool {
       pool.synchronized {
         if (pool != null) {
           pool.close()
+          poolCache.remove(new Key(pool.factory.configuration))
           println(s"====> HDFSClientPool $pool Closed.")
         }
       }
@@ -82,8 +87,8 @@ object FileSystemObjectPool {
    * 程序运行终止时，关闭连接池
    */
   def shutdownDefaultPool(): Unit = {
-    shutdownPool(defaultPool)
-    defaultPool = null
+    poolCache.elements().asScala.foreach(shutdownPool)
+    poolCache.clear()
   }
 
 }

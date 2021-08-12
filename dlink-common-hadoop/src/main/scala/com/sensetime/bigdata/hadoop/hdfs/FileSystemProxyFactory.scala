@@ -3,7 +3,6 @@ package com.sensetime.bigdata.hadoop.hdfs
 import net.sf.cglib.proxy.{Enhancer, MethodInterceptor, MethodProxy}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.hdfs.DistributedFileSystem
 
 import java.lang.reflect.Method
 
@@ -12,15 +11,30 @@ import java.lang.reflect.Method
  *
  * @author zhangqiang
  * @since 2021/7/9 14:02
+ * @param factory
+ * @param config
  * @param maxWaitMillis Max wait millis of borrowing object from an object pool
  */
-class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor {
+class FileSystemProxyFactory(factory: FileSystemPooledObjectFactory,
+                             config: FileSystemObjectPoolConfig,
+                             maxWaitMillis: Long) extends MethodInterceptor {
 
-  private val target: FileSystem = FileSystemProxyFactory.pool.borrowObject(maxWaitMillis)
+  private val objectPool: FileSystemObjectPool = FileSystemObjectPool.getDefaultPool(factory, config)
+
+  private val target: FileSystem = objectPool.borrowObject(maxWaitMillis)
 
   private val configuration: Configuration = target.getConf
 
   @volatile private var proxy: FileSystem = _
+
+  def this(factory: FileSystemPooledObjectFactory) {
+    this(factory, FileSystemObjectPoolConfig.getDefaultHDFSConfig, -1)
+  }
+
+  def this() {
+    this(new FileSystemPooledObjectFactory(new Configuration()))
+  }
+
 
   /**
    * Get a proxy object for target object
@@ -53,7 +67,7 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
   override def intercept(obj: Object, method: Method, args: Array[Object], proxy: MethodProxy): Object = {
     val returnValue = method.getName match {
       case "close" =>
-        FileSystemProxyFactory.pool.returnObject(target)
+        objectPool.returnObject(target)
         Unit
       case _ => method.invoke(target, args: _*)
     }
@@ -62,10 +76,3 @@ class FileSystemProxyFactory(maxWaitMillis: Long = -1) extends MethodInterceptor
 
 }
 
-object FileSystemProxyFactory {
-
-  private val factory = new FileSystemPooledObjectFactory(new Configuration())
-  private val config: FileSystemObjectPoolConfig = FileSystemObjectPool.getDefaultHDFSConfig
-  private lazy val pool: FileSystemObjectPool = FileSystemObjectPool.getDefaultPool(factory, config)
-
-}
