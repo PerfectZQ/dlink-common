@@ -55,7 +55,7 @@ object FileSystemObjectPool {
     override def toString: String = scheme + "://" + authority
   }
 
-  @volatile private val poolCache: ConcurrentHashMap[Key, FileSystemObjectPool] = new ConcurrentHashMap[Key, FileSystemObjectPool]()
+  private val poolCache: ConcurrentHashMap[Key, FileSystemObjectPool] = new ConcurrentHashMap[Key, FileSystemObjectPool]()
 
   /**
    * 初始化连接池
